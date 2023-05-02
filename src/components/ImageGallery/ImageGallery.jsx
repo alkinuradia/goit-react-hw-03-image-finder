@@ -1,32 +1,95 @@
-import ImageGalleryItem from "components/ImageGalleryItem/ImageGalleryItem";
+import React from 'react';
 import PropTypes from 'prop-types';
-import { Gallery } from "./ImageGallery.styled";
+import { ImageGalleryItem } from '../ImageGalleryItem/ImageGalleryItem';
+import { Loader } from '../Loader/Loader';
+import Notiflix from 'notiflix';
 
-export default function ImageGallery({ images, onClick }) {
+import { Gallery } from './ImageGallery.styled';
+
+const URL = 'https://pixabay.com/api/?';
+const API_KEY = '35978701-4ba0c349421f32e567be76f4c';
+
+export class ImageGallery extends React.Component {
+  state = {
+    galleryImage: [],
+    loading: false,
+    error: null,
+    totalHits: 0,
+  };
+
+  componentDidUpdate(prevProps, prevState) {
+    if (
+      prevProps.galleryName !== this.props.galleryName ||
+      prevProps.page !== this.props.page
+    ) {
+      this.setState({
+        loading: true,
+      });
+
+      if (this.props.onSubmitForm) {
+        this.setState({ galleryImage: [] });
+      }
+
+      fetch(
+        `${URL}key=${API_KEY}&q=${this.props.galleryName}
+        &image_type=photo&orientation=horizontal
+        &per_page=${this.props.per_page}
+        &page=${this.props.page}`
+      )
+        .then(responce => responce.json())
+        .then(gallery => {
+          if (gallery.totalHits === 0) {
+            Notiflix.Notify.failure('Gallery not found');
+            this.props.onBtnLoadMore(false);
+          } else this.props.onBtnLoadMore(true);
+
+          this.setState(prevState => ({
+            galleryImage: prevState.galleryImage.concat(gallery.hits),
+            totalHits: gallery.totalHits,
+            error: false,
+          }));
+          // console.log(this.state.galleryImage.length, this.state.totalHits);
+          // if (this.state.galleryImage.length === this.state.totalHits) {
+          //   this.props.onBtnLoadMore(false);
+          // }
+        })
+        .catch(error => this.setState({ error: true }))
+        .finally(() => {
+          this.setState({ loading: false });
+        });
+    }
+  }
+
+  handlModal = urlLargImage => {
+    this.props.urlLargeImage(urlLargImage);
+  };
+
+  render() {
+    const images = this.state.galleryImage;
+
     return (
+      <div>
         <Gallery>
-            {images.map(({ id, webformatURL, largeImageURL, tags }) => (
-                <ImageGalleryItem
-                    key={id}
-                    webformatURL={webformatURL}
-                    largeImageURL={largeImageURL}
-                    tags={tags}
-                    onClick={onClick}
-                />
-            ))}
+          {images &&
+            images.map(image => {
+              return (
+                <div key={image.id}>
+                  <ImageGalleryItem
+                    imageReview={image.webformatURL}
+                    largeImage={image.largeImageURL}
+                    altImage={image.tags}
+                    onModal={this.handlModal}
+                  />
+                </div>
+              );
+            })}
         </Gallery>
-
-    )
+        {this.state.loading && <Loader />}
+      </div>
+    );
+  }
 }
 
 ImageGallery.propTypes = {
-    images: PropTypes.arrayOf(
-        PropTypes.shape({
-            id: PropTypes.number.isRequired,
-            webformatURL: PropTypes.string.isRequired,
-            largeImageURL: PropTypes.string.isRequired,
-            tags: PropTypes.string.isRequired,
-        })
-    ),
-    onClick: PropTypes.func.isRequired,
-}
+  props: PropTypes.object,
+};

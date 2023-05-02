@@ -1,14 +1,22 @@
-import { StyledButton } from './Button.styled';
+import React from 'react';
+import { BtnLoadMoreSection, BtnLoadMore } from './Button.styled';
+
 import PropTypes from 'prop-types';
 
+export const Button = props => {
+  const handleBtnLoadMore = () => {
+    props.onBtnLM();
+  };
 
-const Button = ({onClick}) => {
-    return (
-        <StyledButton type="button" onClick={onClick}>Load More</StyledButton>
-    )
-}
+  return (
+    <BtnLoadMoreSection>
+      <BtnLoadMore type="button" onClick={handleBtnLoadMore}>
+        Load More
+      </BtnLoadMore>
+    </BtnLoadMoreSection>
+  );
+};
 
 Button.propTypes = {
-  onClick: PropTypes.func,
+  props: PropTypes.object,
 };
-export default Button;

@@ -1,98 +1,82 @@
-import { Component } from "react";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { Container } from './App.styled';
-import ImageGallery from "./ImageGallery/ImageGallery";
-import SearchBar from "./Searchbar/Searchbar";
-import getImgByQuery from "../Services/Api";
-import Loader from "./Loader/Loader";
-import Button from "./Button/Button";
-import Modal from "./Modal/Modal";
+import React from 'react';
+import { Searchbar } from './Searchbar/Searchbar';
+import { ImageGallery } from './ImageGallery/ImageGallery';
+import { Modal } from './Modal/Modal';
+import { Button } from './Button/Button';
 
-
-export default class App extends Component {
+export class App extends React.Component {
   state = {
-    query: '',
+    searchGallery: '',
     page: 1,
-    images: [],
-    totalHits: null,
-    totalPages: null,
-    largeImageURL: null,
-    isLoading: false,
-    showModal: false,
-    error: null,
+    per_page: 12,
+    onModal: false,
+    onVisibleBtnLoadMore: false,
+    urlLargeImage: '',
+    submitSearch: true,
+  };
+
+  componentDidMount() {
+    window.addEventListener('keydown', event => {
+      if (event.code === 'Escape') this.setState({ onModal: false });
+    });
   }
 
-  async componentDidUpdate(_, prevState) {
-    const { query, page } = this.state;
-
-    if (prevState.query !== query || prevState.page !== page) {
-      this.setState({ isLoading: true });
-    
-    try {
-        const response = await getImgByQuery(query, page);
-        this.setState(prevState => ({
-          images: [...prevState.images, ...response.hits],
-          totalHits: response.totalHits,
-        }));
-      if (page === 1 && response.totalHits !== 0) {
-          toast.success(`Hooray! We found ${response.totalHits} images.`);
-        }
-          
-      if (response.hits.length === 0) {
-          toast.error(
-        'Sorry, there are no images matching your search query. Please try again.'
-      );
-        }
-          
-      } catch (error) {
-        this.setState({ error: error.message });
-      } finally {
-        this.setState({ isLoading: false });
-      }
-    }
-  }
-
-  formSubmit = value => {
-    if (value.trim() === '') {
-      return toast.warning('Enter your request');
-    }
+  handleFormSubmit = searchGallery => {
     this.setState({
-      images: [],
-      query: value,
+      searchGallery,
+      onVisibleBtnLoadMore: false,
       page: 1,
+      submitSearch: true,
     });
   };
-  
-  loadMore = () => {
+
+  handleModal = urlLargeImg => {
+    this.setState({
+      onModal: true,
+      urlLargeImage: urlLargeImg,
+    });
+  };
+
+  isCloseModal = () => {
+    this.setState({ onModal: false });
+    window.removeEventListener('keydown', event => {
+      if (event.code === 'Escape') this.setState({ onModal: false });
+    });
+  };
+
+  visibleBtnLoadMore = btnLM => {
+    this.setState({ onVisibleBtnLoadMore: btnLM });
+  };
+
+  onClickLoadMore = () => {
     this.setState(prevState => ({
       page: prevState.page + 1,
+      submitSearch: false,
     }));
   };
-
-  toggleModal = largeImageURL => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-    }));
-    this.setState({ largeImageURL: largeImageURL });
-  };
-
   render() {
-    const { images, isLoading, totalHits, showModal, largeImageURL, tags} = this.state;
-    const showBtn = images.length !== 0 && images.length !== totalHits && !isLoading;
     return (
-      <Container>
-        <SearchBar onSubmit={this.formSubmit} />
-        {isLoading && <Loader />}
-        <ImageGallery images={images} onClick={this.toggleModal} />
-        {showBtn && <Button onClick={this.loadMore} />}
-        {showModal && (
-          <Modal onClose={this.toggleModal}>
-            <img src={largeImageURL} alt={tags} />
-          </Modal>
+      <div>
+        <Searchbar onSearchGallery={this.handleFormSubmit} />
+        <ImageGallery
+          galleryName={this.state.searchGallery}
+          page={this.state.page}
+          per_page={this.state.per_page}
+          onSubmitForm={this.state.submitSearch}
+          onModal={this.handleModal}
+          onBtnLoadMore={this.visibleBtnLoadMore}
+          urlLargeImage={this.handleModal}
+        />
+        {this.state.onModal && (
+          <Modal
+            urlModal={this.state.urlLargeImage}
+            closeModal={this.isCloseModal}
+          />
         )}
-        <ToastContainer theme="colored" position="top-right" autoClose={3000} />
-      </Container>
-    )
+        {this.state.onVisibleBtnLoadMore && (
+          <Button onBtnLM={this.onClickLoadMore} />
+        )}
+      </div>
+    );
   }
-};
+}

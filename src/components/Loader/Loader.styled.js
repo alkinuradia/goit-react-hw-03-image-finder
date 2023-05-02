@@ -1,5 +1,10 @@
-import styled from "styled-components";
+import styled from 'styled-components';
 
-export const Container = styled.div`
-   margin: 0 auto;
-  text-align: center;`;
+export const LoaderBox = styled.div`
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 30px;
+`;
+
+export const LoaderItem = styled.div``;
